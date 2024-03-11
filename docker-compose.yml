@@ -1,0 +1,44 @@
+version: '3.3'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=my_store
+      - POSTGRES_USER=nico
+      - POSTGRES_PASSWORD=admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data_pdn:/var/lib/postgresql/data
+
+  back-end:
+    build:
+      context: ./back-end/.
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=${POSTGRES_HOST}
+      - DB_NAME=${POSTGRES_DB}
+      - DB_PORT=${POSTGRES_PORT}
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      - JWT_SECRET=ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnpkV0lpT2lJeE1qTTBOVFkzT0Rrd0lpd2libUZ0WlNJNklrcHZhRzRnUkc5bElpd2lhV0YwSWpveE5URTJNak01TURJeWZRLlNmbEt4d1JKU01lS0tGMlFUNGZ3cE1lSmYzNlBPazZ5SlZfYWRRc3N3NWM
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    command: [ "sh", "-c", "npm install && npm run migrate:latest || npm run migrate" ]
+
+  from-end:
+    build:
+      context: ./from-end/.
+      dockerfile: Dockerfile
+    environment:
+      - VUE_APP_BASE_URL=http://${BACK_END_HOST}:${BACK_END_PORT}/api/v1
+      - VUE_APP_PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - back-end
